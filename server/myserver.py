@@ -29,7 +29,7 @@ class myserver(object):
         sock.settimeout(1)
         total_data=[]
         err=1
-        
+        #可以通过返回一个状态值告诉进程当前连接状态
         while True:
             try:
                 data = sock.recv(1024)
