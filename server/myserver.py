@@ -154,7 +154,7 @@ class myserver(object):
             if op.splitext(head[1])[-1].lower()=='.jpg':
                 tep.append('Content-type: image/jpeg\r\n')
         
-        tep.append('\r\n')
+        tep.append('\r\n')#这是与正文之间的分割
         sdstr=''.join(tep)
 
         sock.send(sdstr)
