@@ -153,19 +153,23 @@ class myserver(object):
         if num==200:#这里进行文件后缀的添加
             if op.splitext(head[1])[-1].lower()=='.jpg':
                 tep.append('Content-type: image/jpeg\r\n')
+            else:
+                tep.append('Content-type: text/html\r\n')
         
         tep.append('\r\n')#这是与正文之间的分割
         sdstr=''.join(tep)
 
         sock.send(sdstr)
+        print 'send head:\n'+sdstr
     
     def sendfile(self,sock,path):#返回需要的html
         with open(path,'rb') as f:
             while True:
-                tep=f.read(2048)
+                tep=f.read(10240)
                 if not tep:
                     break
                 sock.send(tep)
+                #print tep
             
     def process_con(self,sock,addr):#process thread
         print threading.current_thread().name

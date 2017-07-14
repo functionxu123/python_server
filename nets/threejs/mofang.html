@@ -1,0 +1,664 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>魔方</title>
+    <script type="text/javascript" src="libs/Three.js"></script>
+    <script type="text/javascript" src="libs/stats.min.js"></script>
+    <script src="libs/controls/TrackballControls.js"></script>
+    <script src="libs/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div id="WebGL-output"></div>
+<script type="text/javascript">
+
+    var level=3;//阶数////////////
+    var len=18/level;//边长
+    var pi=Math.PI;
+    var pianyi=0.00001;
+
+    var cubelist=new Array(level*level*level);
+    var mapcube=new Array();
+    var mapdir=new Array();
+    var i, j,k;
+    var done1=false,done2=false;
+
+    function init() {
+    //创建场景
+        var scene = new THREE.Scene();
+    //创建照相机，这是一个透视投影相机
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    //将照相机加入到场景中
+        scene.add(camera);
+    //创建渲染器
+        var renderer = new THREE.WebGLRenderer({
+            //antialias:true,       //是否开启反锯齿
+            precision:"highp",    //着色精度选择
+            alpha:true,           //是否可以设置背景色透明
+            premultipliedAlpha:false,
+            stencil:false,
+            preserveDrawingBuffer:true, //是否保存绘图缓冲
+            //maxLights:3           //maxLights:最大灯光数
+        });
+    //设置渲染器的背景色
+        renderer.setClearColor(0x0000ee,0.2);
+    //设置渲染器的大小
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    //设置渲染器是否显示阴影
+        renderer.shadowMapEnabled = true;
+
+        /*
+        var planeGeometry = new THREE.PlaneGeometry(60, 40, 1, 1);
+    //设置地面所用的材质
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xffffff});
+    //设置地面用网格形式渲染
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    //设置地面接收阴影
+        plane.receiveShadow = true;
+    // 设置地面位置和旋转
+        // plane.rotation.x = -0.5 * Math.PI;
+        plane.position.x = 0;
+        plane.position.y = 0;
+        plane.position.z = 0;
+    //将地面加到场景中
+        scene.add(plane);
+        */
+
+        var cubeGeometry;
+        var cubeMaterial;
+        var cub;
+
+        var strs=["red","orange","green","blue","white","yellow","black"];
+
+        var mat=new Array(7);//
+        var texture;
+
+        for (i=0;i<7;i++){
+            texture = THREE.ImageUtils.loadTexture("images/" + strs[i]+'.png');
+            mat[i] = new THREE.MeshBasicMaterial({map:texture});
+        }//
+
+
+
+        for (i=0;i<level;i++) {
+            mapcube[i]=new Array();
+            mapdir[i]=new Array();
+            for (j = 0; j < level; j++) {
+                mapcube[i][j]=new Array();
+                mapdir[i][j]=new Array();
+                for (k = 0; k < level; k++) {
+                    mapdir[i][j][k]=[0,1,2,3];
+
+                    var matrs=[];//materials
+                    var count=0;
+                    //创建一个正方体
+                    cubeGeometry = new THREE.BoxGeometry(len, len, len);
+                    //设置正方体所需的材质（Lambert材质
+                    //cubeMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
+                    //将正方体用网络模式渲染出来
+                    //cub = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+                    //right and left
+                    if(k==level-1){//right
+                        matrs.push(mat[5]);//yellow
+                        count++;
+                    } else{
+                        matrs.push(mat[6]);
+                    }
+
+                    if(k==0){//left
+                        matrs.push(mat[4]);//white
+                        count++;
+                    }else{
+                        matrs.push(mat[6]);
+                    }
+
+                    //top and bottom
+                    if(i==level-1){//top
+                        matrs.push(mat[2]);//green
+                        count++;
+                    }else{
+                        matrs.push(mat[6]);
+                    }
+
+                    if(i==0){//bottom
+                        matrs.push(mat[3]);//blue
+                        count++;
+                    }else{
+                        matrs.push(mat[6]);
+                    }
+
+                    //front and back
+                    if(j==level-1){//front
+                        matrs.push(mat[1]);//orange
+                        count++;
+                    }else{
+                        matrs.push(mat[6]);
+                    }
+
+                    if(j==0){//back
+                        matrs.push(mat[0]);//red
+                        count++;
+                    }else{
+                        matrs.push(mat[6]);
+                    }
+
+                    //window.console.log(i+":"+j+":"+k+"="+(i * level * level + j * level + k)+" count:"+count);
+                    var material=new THREE.MeshFaceMaterial(matrs);
+                    cub = new THREE.Mesh(cubeGeometry, material);
+
+                    cub.castShadow = true;
+                    cub.receiveShadow = true;
+                    //设置正方体的位置
+                    cub.position.x = (k - (level - 1) / 2) * len;//
+                    cub.position.y = (i- (level - 1) / 2) * len;
+                    cub.position.z = (j - (level - 1) / 2) * len;
+                    //将正方体加入到场景
+                    cubelist[i * level * level + j * level + k] = cub;
+                    mapcube[i][j][k]=i * level * level + j * level + k;
+
+                    //if(i==2&&j==1&& k==1)
+                    scene.add(cubelist[i * level * level + j * level + k]);
+                    //window.console.log(cubelist[i * level * level + j * level + k].up);
+                }
+            }
+        }
+        //window.console.log(mapdir);
+
+         //设置照相机的位置
+        camera.position.x = 30;
+        camera.position.y = 30;
+        camera.position.z = 30;//len*level;
+        //设置照相机的观察中心
+        camera.lookAt(scene.position);//
+
+        var controls = new THREE.OrbitControls(camera);
+
+        // 添加环境光源
+        var ambientLight = new THREE.AmbientLight(0x0c0c0c);
+    //将环境光源加入到场景中
+        scene.add(ambientLight);
+        //创建一个聚光光源
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(camera.position.x, camera.position.y, camera.position.z );
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        var axis=new THREE.AxisHelper(200);//红：x  绿：y   蓝：z
+        //scene.add(axis);
+
+        var stat = new Stats();
+        stat.domElement.style.position = 'absolute';
+        stat.domElement.style.left = '0px';
+        stat.domElement.style.top = '0px';
+        document.body.appendChild(stat.domElement);
+
+
+        function rotation_x(ad){
+            /*
+            for (i=0;i<level;i++){
+                for(j=0;j<level;j++){
+                    for (k=0;k<level;k++){
+                        var tep=cubelist[i * level * level + j * level + k];
+                        var tex=tep.position.x;
+                        var tey=tep.position.y;
+                        var tez=tep.position.z;
+
+                        cubelist[i * level * level + j * level + k].position.z=tez*Math.cos(ad)+tey*Math.sin(ad);
+                        cubelist[i * level * level + j * level + k].position.y=tey*Math.cos(ad)-tez*Math.sin(ad);
+                        cubelist[i * level * level + j * level + k].rotation.x+=ad;
+                    }
+                }
+            }
+            */
+            var tex=camera.position.x;
+            var tey=camera.position.y;
+            var tez=camera.position.z;
+
+            camera.position.z=tez*Math.cos(ad)-tey*Math.sin(ad);
+            camera.position.y=tey*Math.cos(ad)+tez*Math.sin(ad);
+            spotLight.position.set(camera.position.x, camera.position.y, camera.position.z );
+            camera.lookAt(scene.position);//
+
+            //window.console.log(ad)
+        }
+
+        function rotation_y(ad){
+            /*
+            for (i=0;i<level;i++){
+                for(j=0;j<level;j++){
+                    for (k=0;k<level;k++){
+                        var tep=cubelist[i * level * level + j * level + k];
+                        var tex=tep.position.x;
+                        var tey=tep.position.y;
+                        var tez=tep.position.z;
+
+                        cubelist[i * level * level + j * level + k].position.z=tez*Math.cos(ad)-tex*Math.sin(ad);
+                        cubelist[i * level * level + j * level + k].position.x=tex*Math.cos(ad)+tez*Math.sin(ad);
+                        cubelist[i * level * level + j * level + k].rotation.y+=ad;
+                    }
+                }
+            }
+            */
+            var tex=camera.position.x;
+            var tey=camera.position.y;
+            var tez=camera.position.z;
+
+            camera.position.z=tez*Math.cos(ad)-tex*Math.sin(ad);
+            camera.position.x=tex*Math.cos(ad)+tez*Math.sin(ad);
+            spotLight.position.set(camera.position.x, camera.position.y, camera.position.z );
+            camera.lookAt(scene.position);//
+        }
+
+        function rotation_z(ad){
+
+            /*
+            for (i=0;i<level;i++){
+                for(j=0;j<level;j++){
+                    for (k=0;k<level;k++){
+                        var tep=cubelist[i * level * level + j * level + k];
+                        var tex=tep.position.x;
+                        var tey=tep.position.y;
+                        var tez=tep.position.z;
+
+                        //cubelist[i * level * level + j * level + k].position.y=tey*Math.cos(ad)+tex*Math.sin(ad);
+                        //cubelist[i * level * level + j * level + k].position.x=tex*Math.cos(ad)-tey*Math.sin(ad);
+                        //cubelist[i * level * level + j * level + k].rotation.z+=ad;
+
+                        var v1 = new THREE.Vector3( 1, 1, 1 );//y
+                        cubelist[i * level * level + j * level + k].rotateOnAxis( v1,ad );
+                    }
+                }
+            }
+            */
+            var tex=camera.position.x;
+            var tey=camera.position.y;
+            var tez=camera.position.z;
+
+            camera.position.y=tey*Math.cos(ad)+tex*Math.sin(ad);
+            camera.position.x=tex*Math.cos(ad)-tey*Math.sin(ad);
+            spotLight.position.set(camera.position.x, camera.position.y, camera.position.z );
+            camera.lookAt(scene.position);//
+        }
+
+        function rollacube(xyz,ii,jj,kk,ad){//x or y or z,i,j,k,add
+            var abs=Math.abs(xyz);
+
+            //window.console.log("y="+ab);
+
+            switch(abs){
+                case 1:
+                    // cubelist[mapcube[ii][jj][kk]].rotation.x+=ad*xyz/abs;//angle roll
+                    cubelist[mapcube[ii][jj][kk]].rotateX(ad*xyz/abs);
+                    break;
+                case 2:
+                    //cubelist[mapcube[ii][jj][kk]].rotation.y+=ad*xyz/abs;//angle roll
+                    cubelist[mapcube[ii][jj][kk]].rotateY(ad*xyz/abs);
+                    break;
+                case 3:
+                    //cubelist[mapcube[ii][jj][kk]].rotation.z+=ad*xyz/abs;//angle roll
+                    cubelist[mapcube[ii][jj][kk]].rotateZ(ad*xyz/abs);
+                    break;
+            }
+        }
+
+        var kep_i=0;
+        function roll_i(num,ad){//num:hang num(0,1,2)
+            var tep;
+            var temp;
+            var tep_map=new Array(),tep_dir=new Array();
+            for (j=0;j<level;j++){
+                tep_map[j]=new Array();
+                tep_dir[j]=new Array();
+
+                for (k=0;k<level;k++){
+                    tep_map[j][k]=mapcube[num][j][k];
+                    tep_dir[j][k]=[mapdir[num][j][k][0],mapdir[num][j][k][1],mapdir[num][j][k][2],mapdir[num][j][k][3]];
+
+                    tep=cubelist[mapcube[num][j][k]];//mapcube[num][j][k]
+                    //window.console.log(num+":"+j+":"+k);
+                    var tex=tep.position.x;
+                    var tey=tep.position.y;
+                    var tez=tep.position.z;
+
+                    cubelist[mapcube[num][j][k]].position.z=tez*Math.cos(ad)-tex*Math.sin(ad);//position roll
+                    cubelist[mapcube[num][j][k]].position.x=tex*Math.cos(ad)+tez*Math.sin(ad);
+
+                    rollacube(mapdir[num][j][k][2],num,j,k,ad);
+                }
+            }
+            kep_i+=ad;
+            //window.console.log("roll_i");
+            if(kep_i>=(pi/2-pianyi)){
+                kep_i-=pi/2;
+                for (j=0;j<level;j++){
+                    for(k=0;k<level;k++){
+                        mapcube[num][level-1-k][j]=tep_map[j][k];//
+                        for (var l=0;l<=3;l++){//map dir roll
+                            mapdir[num][level-1-k][j][l]=tep_dir[j][k][l];
+                        }
+
+                        ////
+                        temp=mapdir[num][level-1-k][j][1];
+                        mapdir[num][level-1-k][j][1]=mapdir[num][level-1-k][j][3];
+                        mapdir[num][level-1-k][j][3]=-temp;
+                    }
+                }
+            }else if(kep_i<=(-pi/2+pianyi)){
+                kep_i+=pi/2;
+                for (j=0;j<level;j++){
+                    for(k=0;k<level;k++){
+                        mapcube[num][k][level-1-j]=tep_map[j][k];//
+                        //
+                        for (var l=0;l<=3;l++){//map dir roll
+                            mapdir[num][k][level-1-j][l]=tep_dir[j][k][l];
+                        }
+
+                        temp=mapdir[num][k][level-1-j][1];
+                        mapdir[num][k][level-1-j][1]=-mapdir[num][k][level-1-j][3];
+                        mapdir[num][k][level-1-j][3]=temp;
+
+                    }
+                }
+            }
+        }
+
+
+        //////////////////////////////////
+        var kep_k=0;
+        function roll_k(num,ad){//num:hang num(0,1,2)
+            var tep,temp;
+            var tep_map=new Array(),tep_dir=new Array();
+            for (i=0;i<level;i++){
+                tep_map[i]=new Array();
+                tep_dir[i]=new Array();
+                for (j=0;j<level;j++){
+                    tep_map[i][j]=mapcube[i][j][num];//
+                    tep_dir[i][j]=[mapdir[i][j][num][0],mapdir[i][j][num][1],mapdir[i][j][num][2],mapdir[i][j][num][3]];
+
+
+                    tep=cubelist[mapcube[i][j][num]];
+
+                    var tex=tep.position.x;
+                    var tey=tep.position.y;
+                    var tez=tep.position.z;
+
+                    cubelist[mapcube[i][j][num]].position.z=tez*Math.cos(ad)+tey*Math.sin(ad);
+                    cubelist[mapcube[i][j][num]].position.y=tey*Math.cos(ad)-tez*Math.sin(ad);
+
+                    rollacube(mapdir[i][j][num][1],i,j,num,ad);
+                }
+            }
+
+
+            kep_k+=ad;
+            //window.console.log(kep_k+":"+pi/2+" ad="+ad);
+            if(kep_k>=(pi/2-pianyi)){
+                //window.console.log(mapcube);
+                kep_k-=pi/2;
+                for (i=0;i<level;i++){
+                    for(j=0;j<level;j++){
+                        mapcube[level-1-j][i][num]=tep_map[i][j];////
+
+                        for (var m=0;m<=3;m++){
+                            mapdir[level-1-j][i][num][m]=tep_dir[i][j][m];
+                        }
+
+                        temp=mapdir[level-1-j][i][num][2];
+                        mapdir[level-1-j][i][num][2]=-mapdir[level-1-j][i][num][3];
+                        mapdir[level-1-j][i][num][3]=temp;
+
+                    }
+                }
+                //window.console.log(mapcube);
+            }
+            else if(kep_k<=(pianyi-pi/2)){
+                kep_k+=pi/2;
+                for (i=0;i<level;i++){
+                    for(j=0;j<level;j++){
+                        mapcube[j][level-1-i][num]=tep_map[i][j];//
+
+                        for (var m=0;m<=3;m++){
+                            mapdir[j][level-1-i][num][m]=tep_dir[i][j][m];
+                        }
+
+                        temp= mapdir[j][level-1-i][num][2];
+                        mapdir[j][level-1-i][num][2]= mapdir[j][level-1-i][num][3];
+                        mapdir[j][level-1-i][num][3]=-temp;
+                    }
+                }
+            }
+
+        }
+
+        ///////////////////////////////////////
+        var kep_j=0;
+        function roll_j(num,ad){//num:hang num(0,1,2)
+
+            var tep,temp;
+            var tep_map=new Array(),tep_dir=new Array();
+            for (i=0;i<level;i++){
+                tep_map[i]=new Array();
+                tep_dir[i]=new Array();
+
+                for (k=0;k<level;k++){
+                    tep_map[i][k]=mapcube[i][num][k];//
+
+                    tep_dir[i][k]=[mapdir[i][num][k][0],mapdir[i][num][k][1],mapdir[i][num][k][2],mapdir[i][num][k][3]];
+
+                    tep=cubelist[mapcube[i][num][k]];
+                    var tex=tep.position.x;
+                    var tey=tep.position.y;
+                    var tez=tep.position.z;
+
+                    cubelist[mapcube[i][num][k]].position.y=tey*Math.cos(ad)+tex*Math.sin(ad);
+                    cubelist[mapcube[i][num][k]].position.x=tex*Math.cos(ad)-tey*Math.sin(ad);
+
+                    //window.console.log(i+":"+num+":"+k+":  "+mapdir[i][num][k][2])
+
+                    rollacube(mapdir[i][num][k][3],i,num,k,ad);
+                }
+            }
+
+            kep_j+=ad;
+            //window.console.log(kep_k+":"+pi/2+" ad="+ad);
+            if(kep_j>=(pi/2-pianyi)){
+                kep_j-=pi/2;
+                for (i=0;i<level;i++){
+                    for(k=0;k<level;k++){
+                        mapcube[k][num][level-1-i]=tep_map[i][k];////
+                        for (var m=0;m<=3;m++){
+                            mapdir[k][num][level-1-i][m]=tep_dir[i][k][m];
+                        }
+
+                        temp=mapdir[k][num][level-1-i][1];
+                        mapdir[k][num][level-1-i][1]=-mapdir[k][num][level-1-i][2];
+                        mapdir[k][num][level-1-i][2]=temp;
+                    }
+                }
+            }
+            else if(kep_j<=(pianyi-pi/2)){
+                kep_j+=pi/2;
+                for (i=0;i<level;i++){
+                    for(k=0;k<level;k++){
+                        mapcube[level-1-k][num][i]=tep_map[i][k];//
+                        for (var m=0;m<=3;m++){
+                            mapdir[level-1-k][num][i][m]=tep_dir[i][k][m];
+                        }
+
+                        temp=mapdir[level-1-k][num][i][1];
+                        mapdir[level-1-k][num][i][1]=mapdir[level-1-k][num][i][2];
+                        mapdir[level-1-k][num][i][2]=-temp;
+                    }
+                }
+            }
+        }
+
+
+        //将渲染输出到html元素中
+        document.getElementById("WebGL-output").appendChild(renderer.domElement);
+        var step= 0, dx=0.02, dy=0.023;
+
+
+        var rem_roll= [0,0,0],site=2;//要旋转的量 site in(0,1,2)
+        var rem_rota= [0,0,0];//camera roll,x,y,
+
+
+
+        var instruct=[[1,0,0,2],[0,1,0,2],[0,0,1,2],[1,0,0,2]];
+        var pc= 0,next=false,state=1;
+
+
+        //调用渲染场景
+        renderScene();
+
+
+
+        function renderScene() {
+            stat.begin();
+
+            done1=true;
+            //用requestAnimationFrame进行渲染
+            requestAnimationFrame(renderScene);
+
+            controls.update();
+
+
+            step+=dx;
+            rem_rota[0]=dx;
+            rem_rota[1]=dx;
+            rem_rota[2]=dx;
+
+
+            for(i=0;i<3;i++){//camera roll
+                if(rem_rota[i]!=0) {
+                    if(rem_rota[i]>0) {
+                        if(rem_rota[i]>dy){ dx = dy; rem_rota[i]-=dy;}
+                        else{
+                            dx=rem_rota[i];
+                            rem_rota[i]=0;
+                        }
+                    }
+                    else{
+                        if(rem_rota[i]<-dy){ dx = -dy; rem_rota[i]+=dy;}
+                        else{
+                            dx=rem_rota[i];
+                            rem_rota[i]=0;
+                        }
+                    }
+
+                    if(i==0){
+                        rotation_x(dx);
+                    }
+                    else if(i==1){
+                        rotation_y(dx);
+                    }
+                    else rotation_z(dx);
+
+                }
+                else{//done
+
+                }
+            }
+
+            done2=true;//roll lines
+            for (i=2;i>=0;i--){
+                if(rem_roll[i]!=0){
+                    done2=false;
+
+
+                    if(rem_roll[i]>0) {
+                        if(rem_roll[i]>dy){ dx = dy; rem_roll[i]-=dy;}
+                        else{
+                            dx=rem_roll[i];
+                            rem_roll[i]=0;
+                        }
+                    }
+                    else{
+                        if(rem_roll[i]<-dy){ dx = -dy; rem_roll[i]+=dy;}
+                        else{
+                            dx=rem_roll[i];
+                            rem_roll[i]=0;
+                        }
+                    }
+
+                    //window.log()
+                    if(i==0){
+                        roll_i(site,dx);
+                    }
+                    else if(i==1){
+                        roll_j(site,dx);
+                    }
+                    else roll_k(site,dx);
+
+                    break;
+                }else{//done
+                }
+            }
+
+            if(done2){
+                if(state==1) {//auto run
+                    var Rand = Math.random();
+                    var num1 = Math.round((level - 1) * Rand);
+                    var num2 = Math.round(Math.random() * 5) - 3;
+                    var num3 = Math.round(Math.random() * 2);
+
+                    //window.console.log(num1);
+                    site = num1;
+
+                    rem_roll[num3] = num2 * pi / 2;
+
+                }else if(state==0&&next){//顺序执行,enter control
+                    next=false;
+                    if (pc<instruct.length){
+                        rem_roll[0]=instruct[pc][0]*pi/2;
+                        rem_roll[1]=instruct[pc][1]*pi/2;
+                        rem_roll[2]=instruct[pc][2]*pi/2;
+                        site=instruct[pc][3];
+                        pc++;
+                    }
+                    //window.console.log(mapdir);
+                }else{//其他状态
+
+                }
+            }else{
+                next=false;
+            }
+            renderer.render(scene, camera);
+
+            stat.end();
+        }
+
+        function addinstru(pix,piy,piz,site){
+            var te=[pix,piy,piz,site];
+            instruct.add(te);
+        }
+
+        document.onkeydown=function(event){
+            var e = event || window.event || arguments.callee.caller.arguments[0];
+            if(e && e.keyCode==27){ // 按 Esc
+                //要做的事情
+            }
+            if(e && e.keyCode==113){ // 按 F2
+                //要做的事情
+            }
+            if(e && e.keyCode==13){ // enter 键
+                //要做的事情
+                next=true;
+            }
+        };
+
+
+    }
+
+
+    window.onload = init;
+</script>
+</body>
+</html>
