@@ -7,13 +7,14 @@ Created on 2017年6月11日
 import socket
 import threading
 import sys
+import json
 import os.path as op
 import datetime
 
 rootdir='../nets'
 dir404=op.join(rootdir,'404.html')
-
-        
+typedir='type.txt'#放content type文件的位置
+         
 GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 servername='MyServer'
 
@@ -24,6 +25,9 @@ class myserver(object):
         self.version=version
         self.protocal=proto
         self.thread=[]
+        with open(typedir,'r') as f:
+            self.mtep=json.load(f)
+        print self.mtep 
         
     def getlines(self,sock):#获取一次请求内容，以一次接受超时为界，这里由于recv的阻塞效果，要有一定思考
         sock.settimeout(1)
@@ -151,12 +155,13 @@ class myserver(object):
         #Content-type:image/jpeg
         
         if num==200:#这里进行文件后缀的添加!!!!!!!!!!!!!!!!!!!!!!
-            extep=op.splitext(head[1])[-1].lower()
-            if extep=='.jpg':
-                tep.append('Content-type: image/jpeg\r\n')
+            extep=op.splitext(head[1])[-1].lower().strip()
+            
+            if extep in self.mtep.keys():
+                tep.append('Content-type: %s\r\n'%self.mtep[extep])
             else:
                 tep.append('Content-type: text/html\r\n')
-        
+
         tep.append('\r\n')#这是与正文之间的分割
         sdstr=''.join(tep)
 
