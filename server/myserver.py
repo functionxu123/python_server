@@ -150,8 +150,9 @@ class myserver(object):
         tep.append('Connection:'+'closed'+'\r\n')#关闭连接
         #Content-type:image/jpeg
         
-        if num==200:#这里进行文件后缀的添加
-            if op.splitext(head[1])[-1].lower()=='.jpg':
+        if num==200:#这里进行文件后缀的添加!!!!!!!!!!!!!!!!!!!!!!
+            extep=op.splitext(head[1])[-1].lower()
+            if extep=='.jpg':
                 tep.append('Content-type: image/jpeg\r\n')
             else:
                 tep.append('Content-type: text/html\r\n')
