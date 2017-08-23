@@ -10,6 +10,7 @@ import sys
 import json
 import os.path as op
 import datetime
+from boto.dynamodb.condition import NULL
 
 rootdir='../nets'
 dir404=op.join(rootdir,'404.html')
@@ -101,11 +102,16 @@ class myserver(object):
             t.setDaemon(True)#随主进程一起end  
             t.start() #thread start                                                        
             
-    def process_req(self,par):
+    def process_req(self,par):# 处理useragent  accept等参数
+        if len(par)<1:
+            return None
         par_map={}
         for i in par:
             tep=i.split(':')
-            par_map[tep[0].strip()]=tep[1].strip()
+            if len(tep)>1:
+                par_map[tep[0].strip()]=tep[1].strip()
+            else:
+                par_map[tep[0].strip()]=None
         return par_map
             
     def process_head(self,head):#返回为get/post   路径       参数map（没有为空）
