@@ -20,6 +20,9 @@ GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 servername='MyServer'
 
 
+
+
+
 class myserver(object):
     def __init__(self,port=80,version=socket.AF_INET,proto=socket.SOCK_STREAM):
         self.port=port
